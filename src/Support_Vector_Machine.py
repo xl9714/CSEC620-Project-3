@@ -7,6 +7,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
 from tqdm import tqdm
+import time
 
 path = '../data/df_data'
 training_amount = 1
@@ -15,6 +16,7 @@ def natural_sort_key(s):
     return [int(text) if text.isdigit() else text.lower() for text in re.split('([0-9]+)', s)]
 
 def train(train_files):
+    start_time = time.time()  # Start time measurement
     print('  Training SVM on ' + str(len(train_files)) + ' file/s:\n    ' + str(train_files))
     dfs_train = [pd.read_csv(file) for file in tqdm(train_files, desc="Reading training files")]
     df_train = pd.concat(dfs_train, ignore_index=True)
@@ -38,9 +40,14 @@ def train(train_files):
     model.fit(X_train, y_train)
     print('  Best Parameters:', model.best_params_)
     print('  Training Complete')
+
+    end_time = time.time()  # End time measurement
+    print(f"  Training Time: {end_time - start_time} seconds")
+
     return model
 
 def evaluate(model, test_files):
+    start_time = time.time()  # Start time measurement
     print('  Testing Model on ' + str(len(test_files)) + ' file/s:\n    ' + str(test_files))
     dfs_test = [pd.read_csv(file) for file in tqdm(test_files, desc="Reading test files")]
     df_test = pd.concat(dfs_test, ignore_index=True)
@@ -57,8 +64,11 @@ def evaluate(model, test_files):
     print(f'    - Precision: {100 * round(precision, 3)}%')
     print(f'    - Recall: {100 * round(recall, 3)}%')
     print(f'    - F1 Score: {100 * round(f1, 3)}%')
+    end_time = time.time()  # End time measurement
+    print(f"  Testing Time: {end_time - start_time} seconds")
 
 def main():
+    overall_start = time.time()  # Start time measurement for the entire process
     print('SVM Algorithm')
     files = os.listdir(path)
     files = sorted(files, key=natural_sort_key)
@@ -71,6 +81,8 @@ def main():
             test_files.append(path + '/' + elem)
     model = train(train_files)
     evaluate(model, test_files)
+    overall_end = time.time()  # End time measurement for the entire process
+    print(f"Total Time for Execution: {overall_end - overall_start} seconds")
 
 if __name__ == '__main__':
        main()
