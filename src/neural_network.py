@@ -22,33 +22,23 @@ all_files = glob.glob(os.path.join(path + "/*.csv"))
 labels = []
 features = []
 
-for file in all_files:
+training_data = pd.read_csv(all_files[0], delimiter=",", header=0)
+train_labels = training_data['target']
+train_features = training_data.drop('target', axis=1)
+
+for file_ind in range(1, len(all_files)):
+    file = all_files[file_ind]
     dataset = pd.read_csv(file, delimiter=",", header=0)
     label = dataset['target']
     feature = dataset.drop('target', axis=1)
     labels.append(label)
     features.append(feature)
 
-df_labels = pd.concat(labels, ignore_index=True)
-df_features = pd.concat(features, ignore_index=True)
+test_labels = pd.concat(labels, ignore_index=True)
+test_features = pd.concat(features, ignore_index=True)
 
-df_labels = df_labels.sample(frac=1, random_state=42)
-df_features = df_features.sample(frac=1, random_state=42)
-
-# df_labels = df_labels.fillna(df_labels.median())
-
-# quantile_95 = dataset.quantile(0.95)
-# dataset = np.where(dataset > quantile_95, quantile_95, dataset)
-
-data_entry_size = df_features.shape[0]
-training_size = int(data_entry_size * 0.8)
-testing_size = int(data_entry_size * 0.2)
-
-train_features = df_features[:training_size]
-train_labels = df_labels[:training_size]
-
-test_features = df_features[training_size:]
-test_labels = df_labels[training_size:]
+test_labels = test_labels.sample(frac=1, random_state=42)
+test_features = test_features.sample(frac=1, random_state=42)
 
 scaler = StandardScaler()
 train_features = scaler.fit_transform(train_features)
