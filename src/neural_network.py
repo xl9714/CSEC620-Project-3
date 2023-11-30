@@ -44,20 +44,20 @@ scaler = StandardScaler()
 train_features = scaler.fit_transform(train_features)
 test_features = scaler.transform(test_features)
 
-train_labels = to_categorical(train_labels, num_classes=3)
-test_labels = to_categorical(test_labels, num_classes=3)
+train_labels = to_categorical(train_labels, num_classes=2)
+test_labels = to_categorical(test_labels, num_classes=2)
 
 model = Sequential()
-model.add(Dense(128, input_dim=train_features.shape[1], activation='relu'))
-model.add(BatchNormalization())
-model.add(Dropout(0.5))
-model.add(Dense(64, activation='relu'))
+model.add(Dense(64, input_dim=train_features.shape[1], activation='relu'))
 model.add(BatchNormalization())
 model.add(Dropout(0.5))
 model.add(Dense(32, activation='relu'))
 model.add(BatchNormalization())
 model.add(Dropout(0.5))
-model.add(Dense(3, activation='sigmoid'))
+model.add(Dense(16, activation='relu'))
+model.add(BatchNormalization())
+model.add(Dropout(0.5))
+model.add(Dense(2, activation='sigmoid'))
 
 def recall_m(y_true, y_pred):
     true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
@@ -78,14 +78,14 @@ def f1_m(y_true, y_pred):
 
 start_time = time.time()
 # compile the model
-model.compile(optimizer=Adam(learning_rate=0.001), loss='binary_crossentropy', metrics=['acc',f1_m,precision_m, recall_m])
+model.compile(optimizer=Adam(learning_rate=0.005), loss='binary_crossentropy', metrics=['acc',f1_m,precision_m, recall_m])
 
 
 early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
 model_checkpoint = ModelCheckpoint('best_model.h5', save_best_only=True)
 
 # fit the model
-history = model.fit(train_features, train_labels, epochs=100, batch_size=100, validation_split=0.1, verbose=0, callbacks=[early_stopping, model_checkpoint])
+history = model.fit(train_features, train_labels, epochs=20, batch_size=100000, validation_split=0.1, verbose=0, callbacks=[early_stopping, model_checkpoint])
 
 # evaluate the model
 loss, accuracy, f1_score, precision, recall = model.evaluate(test_features, test_labels, verbose=0)
