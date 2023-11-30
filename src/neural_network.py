@@ -22,52 +22,42 @@ all_files = glob.glob(os.path.join(path + "/*.csv"))
 labels = []
 features = []
 
-for file in all_files:
+training_data = pd.read_csv(all_files[0], delimiter=",", header=0)
+train_labels = training_data['target']
+train_features = training_data.drop('target', axis=1)
+
+for file_ind in range(1, len(all_files)):
+    file = all_files[file_ind]
     dataset = pd.read_csv(file, delimiter=",", header=0)
     label = dataset['target']
     feature = dataset.drop('target', axis=1)
     labels.append(label)
     features.append(feature)
 
-df_labels = pd.concat(labels, ignore_index=True)
-df_features = pd.concat(features, ignore_index=True)
+test_labels = pd.concat(labels, ignore_index=True)
+test_features = pd.concat(features, ignore_index=True)
 
-df_labels = df_labels.sample(frac=1, random_state=42)
-df_features = df_features.sample(frac=1, random_state=42)
-
-# df_labels = df_labels.fillna(df_labels.median())
-
-# quantile_95 = dataset.quantile(0.95)
-# dataset = np.where(dataset > quantile_95, quantile_95, dataset)
-
-data_entry_size = df_features.shape[0]
-training_size = int(data_entry_size * 0.8)
-testing_size = int(data_entry_size * 0.2)
-
-train_features = df_features[:training_size]
-train_labels = df_labels[:training_size]
-
-test_features = df_features[training_size:]
-test_labels = df_labels[training_size:]
+test_labels = test_labels.sample(frac=1, random_state=42)
+test_features = test_features.sample(frac=1, random_state=42)
 
 scaler = StandardScaler()
 train_features = scaler.fit_transform(train_features)
 test_features = scaler.transform(test_features)
 
-train_labels = to_categorical(train_labels, num_classes=3)
-test_labels = to_categorical(test_labels, num_classes=3)
+train_labels = to_categorical(train_labels, num_classes=2)
+test_labels = to_categorical(test_labels, num_classes=2)
 
 model = Sequential()
-model.add(Dense(128, input_dim=train_features.shape[1], activation='relu'))
-model.add(BatchNormalization())
-model.add(Dropout(0.5))
-model.add(Dense(64, activation='relu'))
+model.add(Dense(64, input_dim=train_features.shape[1], activation='relu'))
 model.add(BatchNormalization())
 model.add(Dropout(0.5))
 model.add(Dense(32, activation='relu'))
 model.add(BatchNormalization())
 model.add(Dropout(0.5))
-model.add(Dense(3, activation='sigmoid'))
+model.add(Dense(16, activation='relu'))
+model.add(BatchNormalization())
+model.add(Dropout(0.5))
+model.add(Dense(2, activation='sigmoid'))
 
 def recall_m(y_true, y_pred):
     true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
@@ -88,14 +78,14 @@ def f1_m(y_true, y_pred):
 
 start_time = time.time()
 # compile the model
-model.compile(optimizer=Adam(learning_rate=0.001), loss='binary_crossentropy', metrics=['acc',f1_m,precision_m, recall_m])
+model.compile(optimizer=Adam(learning_rate=0.005), loss='binary_crossentropy', metrics=['acc',f1_m,precision_m, recall_m])
 
 
 early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
 model_checkpoint = ModelCheckpoint('best_model.h5', save_best_only=True)
 
 # fit the model
-history = model.fit(train_features, train_labels, epochs=100, batch_size=100, validation_split=0.1, verbose=0, callbacks=[early_stopping, model_checkpoint])
+history = model.fit(train_features, train_labels, epochs=20, batch_size=100000, validation_split=0.1, verbose=0, callbacks=[early_stopping, model_checkpoint])
 
 # evaluate the model
 loss, accuracy, f1_score, precision, recall = model.evaluate(test_features, test_labels, verbose=0)
