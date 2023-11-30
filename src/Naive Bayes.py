@@ -1,5 +1,6 @@
 import pandas as pd
 import re
+import time
 import os
 from sklearn.naive_bayes import GaussianNB
 from sklearn import metrics
@@ -44,6 +45,7 @@ def evaluate(model, test_files):
 
 
 def main():
+    start = time.time()
     print('Naive Bays Algorithm')
     files = os.listdir(path)
     files = sorted(files, key=natural_sort_key)
@@ -56,6 +58,8 @@ def main():
             test_files.append(path + '/' + elem)
     model = train(train_files)
     evaluate(model, test_files)
+    end = time.time()
+    print("Completed in: " + str(round(end-start, 4)) + " seconds")
 
 
 if __name__ == '__main__':
